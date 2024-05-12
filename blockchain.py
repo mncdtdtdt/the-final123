@@ -41,13 +41,12 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hjshjhdjah kjshkjdhjs'
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['MAIL_SERVER'] = 'smtp.office365.com'
+app.config['MAIL_SERVER'] = 'live.smtp.mailtrap.io'
 app.config['MAIL_PORT'] = 587
+app.config['MAIL_USERNAME'] = 'api'
+app.config['MAIL_PASSWORD'] = '9238d18c65ed297d208118e1de241b15'
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = 'blockchain.alzein@outlook.com'
-app.config['MAIL_PASSWORD'] = 'rjshtfezqboaqziz'
-
 mail = Mail(app)
 Session(app)
 CORS(app)
@@ -87,11 +86,9 @@ def send_reset_email(user, token):
     token = user.get_reset_token()
     html = render_template('reset_email.html',
                            token=token,
-                           url=url_for('reset_token',
-                                       token=token,
-                                       _external=True))
+                           url=url_for('reset_token', token=token))
     msg = Message('Password Reset Request',
-                  sender='blockchain.alzein@outlook.com',
+                  sender='mailtrap@demomailtrap.com',
                   recipients=[user.email],
                   html=html)
     mail.send(msg)
@@ -399,7 +396,7 @@ def register():
             login_user(new_user, remember=True)
             flash('Account created!', category='success')
 
-        return redirect(url_for('client_index'))
+    return redirect(url_for('client_index'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
