@@ -5,13 +5,15 @@ import secrets
 from PIL import Image
 from flask import Flask, request, jsonify, render_template, Blueprint, session
 from flask_session import Session
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
+from flask_mail import Message, Mail
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional
 from time import time
 from flask_cors import CORS
 from collections import OrderedDict
@@ -48,6 +50,12 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hjshjhdjah kjshkjdhjs'
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
 app.config['SESSION_TYPE'] = 'filesystem'
+app.config['MAIL_SERVER'] = 'smtp.office365.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('blockchain.alzein@hotmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('M123159k')
+mail = Mail(app)
 Session(app)
 CORS(app)
 db.init_app(app)
@@ -71,8 +79,34 @@ class User(db.Model, UserMixin):
     public_key = db.Column(db.String(500))
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
     
+    def get_reset_token(self, expires_sec=1800):
+        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_id': self.id}).decode('utf-8')
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        return User.query.get(user_id)
+
     def __repr__(self):
         return f"User('{self.first_name}', '{self.email}', '{self.image_file}')"
+def send_reset_email(user):
+    token = user.get_reset_token()
+    msg = Message('Password Reset Request',
+                  sender='blockchain.alzein@hotmail.com',
+                  recipients=[user.email])
+    msg.body = f'''To reset your password, visit the following link:
+{url_for('reset_token', token=token, _external=True)}
+
+If you did not make this request then simply ignore this email and no changes will be made.
+'''
+    mail.send(msg)
+
+
     
     
     
@@ -254,6 +288,9 @@ class UpdateAccountForm(FlaskForm):
     private_key = StringField('Private Key',
                         validators=[DataRequired()])
     picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
+    old_password = PasswordField('Current Password', validators=[DataRequired()])
+    new_password = PasswordField('New Password', validators=[Optional(), Length(min=7)])
+    confirm_new_password = PasswordField('Confirm New Password', validators=[Optional(), EqualTo('new_password')])
     submit = SubmitField('Update')
 
     def validate_username(self, username):
@@ -267,6 +304,36 @@ class UpdateAccountForm(FlaskForm):
             user = User.query.filter_by(email=email.data).first()
             if user:
                 raise ValidationError('That email is taken. Please choose a different one.')
+    def validate_old_password(self, old_password):
+        if not check_password_hash(current_user.password, old_password.data):
+            raise ValidationError('Invalid current password')
+
+    def validate_new_password(self, new_password):
+        if new_password.data and len(new_password.data) < 7:
+            raise ValidationError('New password must be at least 7 characters')
+
+    def validate_confirm_new_password(self, confirm_new_password):
+        if confirm_new_password.data and confirm_new_password.data != self.new_password.data:
+            raise ValidationError('Passwords do not match')
+        
+        
+class RequestResetForm(FlaskForm):
+    email = StringField('Email',
+                        validators=[DataRequired(), Email()])
+    submit = SubmitField('Request Password Reset')
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user is None:
+            raise ValidationError('There is no account with that email. You must register first.')
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm Password',
+                                     validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Reset Password')
+
 
 
 
@@ -313,7 +380,7 @@ def register():
             public_key = key.publickey().export_key(format='DER')
               
              # Create a new user account
-            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password1, method='sha256'),
+            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password1, method='pbkdf2'),
                         private_key=binascii.hexlify(private_key).decode('ascii'),
                         public_key=binascii.hexlify(public_key).decode('ascii'))
             db.session.add(new_user)
@@ -365,6 +432,37 @@ def save_picture(form_picture):
     return picture_fn
 
 
+@app.route("/reset_password", methods=['GET', 'POST'])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('client_index'))
+    form = RequestResetForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        send_reset_email(user)
+        flash('An email has been sent with instructions to reset your password.', 'info')
+        return redirect(url_for('login'))
+    return render_template('reset_request.html', title='Reset Password', form=form)
+
+
+@app.route("/reset_password/<token>", methods=['GET', 'POST'])
+def reset_token(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('client_index'))
+    user = User.verify_reset_token(token)
+    if user is None:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('reset_request'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(form.password.data).decode('utf-8')
+        user.password = hashed_password
+        db.session.commit()
+        flash('Your password has been updated! You are now able to log in', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_token.html', title='Reset Password', form=form)
+
+
 
 @app.route("/account", methods=['GET', 'POST'])
 @login_required
@@ -378,6 +476,8 @@ def account():
         current_user.email = form.email.data
         current_user.public_key = form.public_key.data
         current_user.private_key = form.private_key.data
+        if form.new_password.data:
+            current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2')
         db.session.commit()
         flash('your account has been updated!', 'succes')
         return redirect(url_for('account'))
@@ -525,7 +625,7 @@ def new_transaction():
 
 if __name__ == '__main__':
 
-    app.run(host='0.0.0.0', port=5002)
+    app.run(host='0.0.0.0')
     db.create_all()
     print('Created Database!')
         
