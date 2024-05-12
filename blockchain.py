@@ -1,26 +1,22 @@
 import os
-import random
-import string
 import secrets
 from PIL import Image
-from flask import Flask, request, jsonify, render_template, Blueprint, session
+from flask import Flask, request, jsonify, render_template, Blueprint
 from flask_session import Session
-from flask import Flask, render_template, redirect, url_for, flash, request, abort
+from flask import redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from flask_mail import Message, Mail
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional
 from time import time
 from flask_cors import CORS
 from collections import OrderedDict
 import binascii
 import Crypto
-from os import path
-from Crypto import Random
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA
@@ -28,15 +24,11 @@ from uuid import uuid4
 import json
 import hashlib
 import requests
-from urllib.parse import urlparse
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.sql import func
 
-
 auth = Blueprint('auth', __name__)
-
-
 
 MINING_SENDER = "The Blockchain"
 MINING_REWARD = 1
@@ -45,7 +37,6 @@ MINING_DIFFICULTY = 2
 db = SQLAlchemy()
 DB_NAME = "database.db"
 
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hjshjhdjah kjshkjdhjs'
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
@@ -53,32 +44,28 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['MAIL_SERVER'] = 'smtp.office365.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('blockchain.alzein@hotmail.com')
-app.config['MAIL_PASSWORD'] = os.environ.get('M123159k')
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = 'blockchain.alzein@outlook.com'
+app.config['MAIL_PASSWORD'] = 'rjshtfezqboaqziz'
+
 mail = Mail(app)
 Session(app)
 CORS(app)
 db.init_app(app)
 
-class Note(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    data = db.Column(db.String(10000))
-    date = db.Column(db.DateTime(timezone=True), default=func.now())
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    
-
 
 class User(db.Model, UserMixin):
-            
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(150))
     first_name = db.Column(db.String(150))
-    notes = db.relationship('Note')
     private_key = db.Column(db.String(500))
     public_key = db.Column(db.String(500))
-    image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
-    
+    image_file = db.Column(db.String(20),
+                           nullable=False,
+                           default='default.jpg')
+
     def get_reset_token(self, expires_sec=1800):
         s = Serializer(app.config['SECRET_KEY'], expires_sec)
         return s.dumps({'user_id': self.id}).decode('utf-8')
@@ -94,30 +81,29 @@ class User(db.Model, UserMixin):
 
     def __repr__(self):
         return f"User('{self.first_name}', '{self.email}', '{self.image_file}')"
-def send_reset_email(user):
-    token = user.get_reset_token()
-    msg = Message('Password Reset Request',
-                  sender='blockchain.alzein@hotmail.com',
-                  recipients=[user.email])
-    msg.body = f'''To reset your password, visit the following link:
-{url_for('reset_token', token=token, _external=True)}
 
-If you did not make this request then simply ignore this email and no changes will be made.
-'''
+
+def send_reset_email(user, token):
+    token = user.get_reset_token()
+    html = render_template('reset_email.html',
+                           token=token,
+                           url=url_for('reset_token',
+                                       token=token,
+                                       _external=True))
+    msg = Message('Password Reset Request',
+                  sender='blockchain.alzein@outlook.com',
+                  recipients=[user.email],
+                  html=html)
     mail.send(msg)
 
 
-    
-    
-    
 def generate_keys():
     key = RSA.generate(2048)
     private_key = key.export_key(format='PEM')
     public_key = key.publickey().export_key(format='PEM')
-    return private_key, public_key   
-    
+    return private_key, public_key
 
-  
+
 with app.app_context():
     db.create_all()
 
@@ -141,23 +127,25 @@ class Blockchain:
         # Create the genesis block
         self.create_block(0, '00')
 
-
     def create_block(self, nonce, previous_hash):
         """
         Add a block of transactions to the blockchain
         """
-        block = {'block_number': len(self.chain) + 1,
-                 'timestamp': time(),
-                 'transactions': self.transactions,
-                 'nonce': nonce,
-                 'previous_hash': previous_hash}
+        block = {
+            'block_number': len(self.chain) + 1,
+            'timestamp': time(),
+            'transactions': self.transactions,
+            'nonce': nonce,
+            'previous_hash': previous_hash
+        }
 
         # Reset the current list of transactions
         self.transactions = []
         self.chain.append(block)
         return block
 
-    def verify_transaction_signature(self, sender_public_key, signature, transaction):
+    def verify_transaction_signature(self, sender_public_key, signature,
+                                     transaction):
         public_key = RSA.importKey(binascii.unhexlify(sender_public_key))
         verifier = PKCS1_v1_5.new(public_key)
         h = SHA.new(str(transaction).encode('utf8'))
@@ -168,8 +156,12 @@ class Blockchain:
             return False
 
     @staticmethod
-    def valid_proof(transactions, last_hash, nonce, difficulty=MINING_DIFFICULTY):
-        guess = (str(transactions) + str(last_hash) + str(nonce)).encode('utf8')
+    def valid_proof(transactions,
+                    last_hash,
+                    nonce,
+                    difficulty=MINING_DIFFICULTY):
+        guess = (str(transactions) + str(last_hash) +
+                 str(nonce)).encode('utf8')
         h = hashlib.new('sha256')
         h.update(guess)
         guess_hash = h.hexdigest()
@@ -223,11 +215,16 @@ class Blockchain:
                 return False
 
             transactions = block['transactions'][:-1]
-            transaction_elements = ['sender_public_key', 'recipient_public_key', 'amount']
-            transactions = [OrderedDict((k, transaction[k]) for k in transaction_elements) for transaction in
-                            transactions]
+            transaction_elements = [
+                'sender_public_key', 'recipient_public_key', 'amount'
+            ]
+            transactions = [
+                OrderedDict((k, transaction[k]) for k in transaction_elements)
+                for transaction in transactions
+            ]
 
-            if not self.valid_proof(transactions, block['previous_hash'], block['nonce'], MINING_DIFFICULTY):
+            if not self.valid_proof(transactions, block['previous_hash'],
+                                    block['nonce'], MINING_DIFFICULTY):
                 return False
 
             last_block = block
@@ -235,7 +232,8 @@ class Blockchain:
 
         return True
 
-    def submit_transaction(self, sender_public_key, recipient_public_key, signature, amount):
+    def submit_transaction(self, sender_public_key, recipient_public_key,
+                           signature, amount):
         transaction = OrderedDict({
             'sender_public_key': sender_public_key,
             'recipient_public_key': recipient_public_key,
@@ -248,7 +246,8 @@ class Blockchain:
             return len(self.chain) + 1
         else:
             # Transaction from wallet to another wallet
-            signature_verification = self.verify_transaction_signature(sender_public_key, signature, transaction)
+            signature_verification = self.verify_transaction_signature(
+                sender_public_key, signature, transaction)
             if signature_verification:
                 self.transactions.append(transaction)
                 return len(self.chain) + 1
@@ -258,7 +257,8 @@ class Blockchain:
 
 class Transaction:
 
-    def __init__(self, sender_public_key, sender_private_key, recipient_public_key, amount):
+    def __init__(self, sender_public_key, sender_private_key,
+                 recipient_public_key, amount):
         self.sender_public_key = sender_public_key
         self.sender_private_key = sender_private_key
         self.recipient_public_key = recipient_public_key
@@ -272,7 +272,8 @@ class Transaction:
         })
 
     def sign_transaction(self, user):
-        private_key = RSA.importKey(binascii.unhexlify(user.private_key.encode('utf-8')))
+        private_key = RSA.importKey(
+            binascii.unhexlify(user.private_key.encode('utf-8')))
         signer = PKCS1_v1_5.new(private_key)
         h = SHA.new(str(self.to_dict()).encode('utf8'))
         return binascii.hexlify(signer.sign(h)).decode('ascii')
@@ -280,30 +281,37 @@ class Transaction:
 
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username',
-                           validators=[DataRequired(), Length(min=2, max=20)])
-    email = StringField('Email',
-                        validators=[DataRequired(), Email()])
-    public_key = StringField('Public Key',
-                        validators=[DataRequired()])
-    private_key = StringField('Private Key',
-                        validators=[DataRequired()])
-    picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
-    old_password = PasswordField('Current Password', validators=[DataRequired()])
-    new_password = PasswordField('New Password', validators=[Optional(), Length(min=7)])
-    confirm_new_password = PasswordField('Confirm New Password', validators=[Optional(), EqualTo('new_password')])
+                           validators=[DataRequired(),
+                                       Length(min=2, max=20)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    public_key = StringField('Public Key', validators=[DataRequired()])
+    private_key = StringField('Private Key', validators=[DataRequired()])
+    picture = FileField('Update Profile Picture',
+                        validators=[FileAllowed(['jpg', 'png'])])
+    old_password = PasswordField('Current Password',
+                                 validators=[DataRequired()])
+    new_password = PasswordField('New Password',
+                                 validators=[Optional(),
+                                             Length(min=7)])
+    confirm_new_password = PasswordField(
+        'Confirm New Password',
+        validators=[Optional(), EqualTo('new_password')])
     submit = SubmitField('Update')
 
     def validate_username(self, username):
         if username.data != current_user.first_name:
             user = User.query.filter_by(first_name=username.data).first()
             if user:
-                raise ValidationError('That username is taken. Please choose a different one.')
+                raise ValidationError(
+                    'That username is taken. Please choose a different one.')
 
     def validate_email(self, email):
         if email.data != current_user.email:
             user = User.query.filter_by(email=email.data).first()
             if user:
-                raise ValidationError('That email is taken. Please choose a different one.')
+                raise ValidationError(
+                    'That email is taken. Please choose a different one.')
+
     def validate_old_password(self, old_password):
         if not check_password_hash(current_user.password, old_password.data):
             raise ValidationError('Invalid current password')
@@ -315,47 +323,45 @@ class UpdateAccountForm(FlaskForm):
     def validate_confirm_new_password(self, confirm_new_password):
         if confirm_new_password.data and confirm_new_password.data != self.new_password.data:
             raise ValidationError('Passwords do not match')
-        
-        
+
+
 class RequestResetForm(FlaskForm):
-    email = StringField('Email',
-                        validators=[DataRequired(), Email()])
+    email = StringField('Email', validators=[DataRequired(), Email()])
     submit = SubmitField('Request Password Reset')
 
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if user is None:
-            raise ValidationError('There is no account with that email. You must register first.')
+            raise ValidationError(
+                'There is no account with that email. You must register first.'
+            )
 
 
 class ResetPasswordForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
-    confirm_password = PasswordField('Confirm Password',
-                                     validators=[DataRequired(), EqualTo('password')])
+    confirm_password = PasswordField(
+        'Confirm Password', validators=[DataRequired(),
+                                        EqualTo('password')])
     submit = SubmitField('Reset Password')
-
-
 
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
-
 # Define routes
+
 
 # Define routes
 @app.route('/server')
 @login_required
 def server():
-        
+
     return render_template('./index.html')
-
-
 
 
 @app.route('/signup', methods=['GET', 'POST'])
 def register():
-     if request.method == 'POST':
+    if request.method == 'POST':
         email = request.form.get('email')
         first_name = request.form.get('firstName')
         password1 = request.form.get('password1')
@@ -365,51 +371,55 @@ def register():
         if user:
             flash('Email already exists.', category='error1')
         elif len(email) < 4:
-            flash('Email must be greater than 3 characters.', category='error1')
+            flash('Email must be greater than 3 characters.',
+                  category='error1')
         elif len(first_name) < 2:
-            flash('First name must be greater than 1 character.', category='error1')
+            flash('First name must be greater than 1 character.',
+                  category='error1')
         elif password1 != password2:
             flash('Passwords don\'t match.', category='error1')
         elif len(password1) < 7:
             flash('Password must be at least 7 characters.', category='error1')
-            return redirect(url_for('register'))        
+            return redirect(url_for('register'))
         else:
             # Generate private and public keys
             key = RSA.generate(2048)
             private_key = key.export_key(format='DER')
             public_key = key.publickey().export_key(format='DER')
-              
-             # Create a new user account
-            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password1, method='pbkdf2'),
-                        private_key=binascii.hexlify(private_key).decode('ascii'),
-                        public_key=binascii.hexlify(public_key).decode('ascii'))
+
+            # Create a new user account
+            new_user = User(
+                email=email,
+                first_name=first_name,
+                password=generate_password_hash(password1, method='pbkdf2'),
+                private_key=binascii.hexlify(private_key).decode('ascii'),
+                public_key=binascii.hexlify(public_key).decode('ascii'))
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user, remember=True)
             flash('Account created!', category='success')
-            
+
         return redirect(url_for('client_index'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-      if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
-        if user:
-            if check_password_hash(user.password, password):
-                flash('Logged in successfully!', category='success')
-                login_user(user, remember=True)
-                return redirect(url_for('client_index'))
+        if request.method == 'POST':
+            email = request.form.get('email')
+            password = request.form.get('password')
+            user = User.query.filter_by(email=email).first()
+            if user:
+                if check_password_hash(user.password, password):
+                    flash('Logged in successfully!', category='success')
+                    login_user(user, remember=True)
+                    return redirect(url_for('client_index'))
+                else:
+                    flash('Incorrect password, try again.', category='error')
             else:
-                flash('Incorrect password, try again.', category='error')
-        else:
-            flash('Email does not exist.', category='error')
-            
-    return render_template('login.html', user=current_user)
+                flash('Email does not exist.', category='error')
 
+    return render_template('login.html', user=current_user)
 
 
 @app.route('/logout')
@@ -418,11 +428,13 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
-    picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+    picture_path = os.path.join(app.root_path, 'static/profile_pics',
+                                picture_fn)
 
     output_size = (125, 125)
     i = Image.open(form_picture)
@@ -439,10 +451,14 @@ def reset_request():
     form = RequestResetForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
-        send_reset_email(user)
-        flash('An email has been sent with instructions to reset your password.', 'info')
+        send_reset_email(user, user.get_reset_token())
+        flash(
+            'An email has been sent with instructions to reset your password.',
+            'info')
         return redirect(url_for('login'))
-    return render_template('reset_request.html', title='Reset Password', form=form)
+    return render_template('reset_request.html',
+                           title='Reset Password',
+                           form=form)
 
 
 @app.route("/reset_password/<token>", methods=['GET', 'POST'])
@@ -455,13 +471,15 @@ def reset_token(token):
         return redirect(url_for('reset_request'))
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        hashed_password = generate_password_hash(form.password.data).decode('utf-8')
-        user.password = hashed_password
+        password = generate_password_hash(form.password.data, method='pbkdf2')
+        user.password = password
         db.session.commit()
-        flash('Your password has been updated! You are now able to log in', 'success')
+        flash('Your password has been updated! You are now able to log in',
+              'success')
         return redirect(url_for('login'))
-    return render_template('reset_token.html', title='Reset Password', form=form)
-
+    return render_template('reset_token.html',
+                           title='Reset Password',
+                           form=form)
 
 
 @app.route("/account", methods=['GET', 'POST'])
@@ -477,7 +495,8 @@ def account():
         current_user.public_key = form.public_key.data
         current_user.private_key = form.private_key.data
         if form.new_password.data:
-            current_user.password = generate_password_hash(form.new_password.data, method='pbkdf2')
+            current_user.password = generate_password_hash(
+                form.new_password.data, method='pbkdf2')
         db.session.commit()
         flash('your account has been updated!', 'succes')
         return redirect(url_for('account'))
@@ -486,9 +505,12 @@ def account():
         form.email.data = current_user.email
         form.public_key.data = current_user.public_key
         form.private_key.data = current_user.private_key
-    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
-    return render_template('account.html', title='Account', image_file=image_file, form=form )
-
+    image_file = url_for('static',
+                         filename='profile_pics/' + current_user.image_file)
+    return render_template('account.html',
+                           title='Account',
+                           image_file=image_file,
+                           form=form)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -498,7 +520,10 @@ def client_index():
     public_key = user.public_key
     private_key = user.private_key
 
-    return render_template("client_index.html", user=user, public_key=public_key, private_key=private_key)
+    return render_template("client_index.html",
+                           user=user,
+                           public_key=public_key,
+                           private_key=private_key)
 
 
 @app.route('/generate/transaction', methods=['POST'])
@@ -508,7 +533,8 @@ def generate_transaction():
     recipient_public_key = request.form['recipient_public_key']
     amount = request.form['amount']
 
-    transaction = Transaction(sender_public_key, sender_private_key, recipient_public_key, amount)
+    transaction = Transaction(sender_public_key, sender_private_key,
+                              recipient_public_key, amount)
 
     response = {
         'transaction': transaction.to_dict(),
@@ -517,6 +543,7 @@ def generate_transaction():
 
     return jsonify(response), 200
 
+
 @app.route('/wallet/new')
 def new_wallet():
     random_gen = Crypto.Random.new().read
@@ -524,12 +551,14 @@ def new_wallet():
     public_key = private_key.publickey()
 
     response = {
-        'private_key': binascii.hexlify(private_key.export_key(format('DER'))).decode('ascii'),
-        'public_key': binascii.hexlify(public_key.export_key(format('DER'))).decode('ascii')
+        'private_key':
+        binascii.hexlify(private_key.export_key(
+            format('DER'))).decode('ascii'),
+        'public_key':
+        binascii.hexlify(public_key.export_key(format('DER'))).decode('ascii')
     }
 
     return jsonify(response), 200
-
 
 
 @app.route('/make/transaction')
@@ -543,6 +572,7 @@ def make_transaction():
 def view_transactions():
     return render_template('view_transactions.html')
 
+
 @app.route('/transactions/get', methods=['GET'])
 @login_required
 def get_transactions():
@@ -554,10 +584,7 @@ def get_transactions():
 @app.route('/chain', methods=['GET'])
 @login_required
 def get_chain():
-    response = {
-        'chain': blockchain.chain,
-        'length': len(blockchain.chain)
-    }
+    response = {'chain': blockchain.chain, 'length': len(blockchain.chain)}
 
     return jsonify(response), 200
 
@@ -585,6 +612,7 @@ def mine():
     }
     return jsonify(response), 200
 
+
 @app.route('/nodes/resolve', methods=['GET'])
 def consensus():
     replaced = blockchain.resolve_conflicts()
@@ -601,26 +629,31 @@ def consensus():
         }
     return jsonify(response), 200
 
-@app.route('/transactions/new', methods=['POST'])
 
+@app.route('/transactions/new', methods=['POST'])
 def new_transaction():
     values = request.form
-    required = ['confirmation_sender_public_key', 'confirmation_recipient_public_key', 'transaction_signature',
-                'confirmation_amount']
+    required = [
+        'confirmation_sender_public_key', 'confirmation_recipient_public_key',
+        'transaction_signature', 'confirmation_amount'
+    ]
     if not all(k in values for k in required):
         return 'Missing values', 400
 
-    transaction_results = blockchain.submit_transaction(values['confirmation_sender_public_key'],
-                                                        values['confirmation_recipient_public_key'],
-                                                        values['transaction_signature'],
-                                                        values['confirmation_amount'])
+    transaction_results = blockchain.submit_transaction(
+        values['confirmation_sender_public_key'],
+        values['confirmation_recipient_public_key'],
+        values['transaction_signature'], values['confirmation_amount'])
     if transaction_results == False:
         response = {'message': 'Invalid transaction/signature'}
         return jsonify(response), 406
     else:
-        response = {'message': 'Transaction will be added to the Block ' + str(transaction_results)}
+        response = {
+            'message':
+            'Transaction will be added to the Block ' +
+            str(transaction_results)
+        }
         return jsonify(response), 201
-
 
 
 if __name__ == '__main__':
@@ -628,4 +661,3 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0')
     db.create_all()
     print('Created Database!')
-        
