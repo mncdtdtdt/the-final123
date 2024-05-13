@@ -23,41 +23,42 @@
       height: 100vh;
   }
 
-  .alert-container {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 9999;
-    }
+    .alert-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+      }
 
-    .alert {
-      background-color: #f44336;
-      color: white;
-      padding: 10px;
-      text-align: center;
-      border-radius: 5px;
-      animation: alert-animation 5s ease-out forwards;
-    }
+      .alert {
+        background-color: #f44336;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        border-radius: 5px;
+        animation: alert-animation 5s ease-out forwards;
+      }
 
-    @keyframes alert-animation {
-      0% {
-        transform: translateY(100%);
-        opacity: 0;
+      @keyframes alert-animation {
+        0% {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        10% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        90% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100%);
+          opacity: 0;
+        }
       }
-      10% {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      90% {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(100%);
-        opacity: 0;
-      }
-    }
+
 
   .container{
       background-color: #fff;
@@ -102,6 +103,26 @@
       cursor: pointer;
   }
 
+.container a{
+    background-color: #512da8;
+    color: #fff;
+    font-size: 12px;
+    padding: 10px 45px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-top: 10px;
+    cursor: pointer;
+}
+    
+
+.container a.hidden{
+    background-color: transparent;
+    border-color: #fff;
+}
+    
   .container input1{
       background-color: #512da8;
       color: #fff;
@@ -267,55 +288,42 @@
 </style>
 </head>
 <body>
-<div class="container" id="container">
-    <div class="form-container sign-in">
-        <form method="POST" action="">
-            {{ form.hidden_tag() }}
-            <h1>Password Reset</h1>
-            <div class="social-icons">
-                <a href="#" class="icon"><i class="fa-brands fa-google-plus-g"></i></a>
-                <a href="#" class="icon"><i class="fa-brands fa-facebook-f"></i></a>
-                <a href="#" class="icon"><i class="fa-brands fa-github"></i></a>
-                <a href="#" class="icon"><i class="fa-brands fa-linkedin-in"></i></a>
-            </div>
-            <span>Enter your email address to reset your password</span>
-            {{ form.email.label(class="input") }}
-            {% if form.email.errors %}
-              {{ form.email(class="form-control form-control-lg is-invalid") }}
-              <div class="alert">
+    <div class="container" id="container">
+        <div class="form-container sign-in">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                <h1>Password Reset</h1>
+                <span>Enter your email address to reset your password</span>
+                {{ form.email.label(class="input1") }}
+                {% if form.email.errors %}
+                    {{ form.email(class="form-control form-control-lg is-invalid") }}
+                {% else %}
+                    {{ form.email(class="form-control form-control-lg") }}
+                {% endif %}
+                <button type="submit" class="btn btn-primary">Reset Password</button>
+                
                 {% for error in form.email.errors %}
-                  <span>{{ error }}</span>
+                    
                 {% endfor %}
-              </div>
-            {% else %}
-              {{ form.email(class="form-control form-control-lg") }}
-            {% endif %}
-            <button type="submit" class="btn btn-primary">Reset Password</button>
-        </form>
-    </div>
-    <div class="form-container sign-up hidden">
-        <!-- This form is hidden and not used in this template -->
-    </div>
-    <div class="toggle-container">
-        <div class="toggle">
-            <div class="toggle-panel toggle-right">
-                <h1>Hello, Friend!</h1>
-                <p>Register with your personal details to use all of site features</p>
-                <button href="{{ url_for('login') }}" class="hidden" id="register">Sign In</button>
+                
+            </form>
+        </div>
+        <div class="form-container sign-up hidden">
+            <!-- This form is hidden and not used in this template -->
+        </div>
+
+<div class="toggle-container">
+            <div class="toggle">
+                
+                <div class="toggle-panel toggle-right">
+                    <h1>Remmber it?</h1>
+                    <p>Go and sign in now to access the amazing features of our website.</p>
+                    <a href="{{ url_for('login') }}" type="button" class="hidden" id="register">Sign In</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-
-
-
-{% with messages = get_flashed_messages(with_categories=true) %} {% if
-    messages %} {% for category, message in messages %} {% if category ==
-    'error1' %}
-    <div class="alert alert-danger alter-dismissable fade show" role="alert1">
-      {{ message }}
-    {% endif %} {% endfor %} {% endif %} {% endwith %}
 
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
         messages %} {% for category, message in messages %} {% if category ==
@@ -323,6 +331,8 @@
         <div class="alert alert-danger alter-dismissable fade show" role="alert">
           {{ message }}
         {% endif %} {% endfor %} {% endif %} {% endwith %}
-
-
+    
+    <script src='static/script.js'></script>
+    
+    
 </body>

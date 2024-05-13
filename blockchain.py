@@ -287,8 +287,8 @@ class UpdateAccountForm(FlaskForm):
     private_key = StringField('Private Key', validators=[DataRequired()])
     picture = FileField('Update Profile Picture',
                         validators=[FileAllowed(['jpg', 'png'])])
-    old_password = PasswordField('Current Password',
-                                 validators=[DataRequired()])
+    old_password = PasswordField('Current Password', validators=[Optional()])
+
     new_password = PasswordField('New Password',
                                  validators=[Optional(),
                                              Length(min=7)])
@@ -331,9 +331,7 @@ class RequestResetForm(FlaskForm):
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
         if user is None:
-            raise ValidationError(
-                'There is no account with that email. You must register first.'
-            )
+            flash('This Email is Invalid', 'error')
 
 
 class ResetPasswordForm(FlaskForm):
