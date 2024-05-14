@@ -1,113 +1,78 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Blockchain Client</title>
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/vendor/DataTables/css/datatables.min.css">
     <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
-    <link rel="stylesheet" href="/static/css/custom.css">
-
-</head>
-<body>
-
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container">
-            <a href="#" class="navbar-brand">Blockchain Client</a>
-            <li class="nav-item">
-                <a href="server" class="navbar-brand">Blockchain Server</a>
-            </li>
-
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ml-auto">
-                    <li class="nav-item active">
-                        <a href="/" class="nav-link">Wallet Generator</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/make/transaction" class="nav-link">Make Transaction</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/view/transactions" class="nav-link">View Transactions</a>
-                    </li>
-                    <li>
-                        <a class="nav-item nav-link" href="{{ url_for('account') }}">Account</a>
-                      </li>
-                </ul>
-            </div>
-        </div>
-        <div class="collapse navbar-collapse" id="navbar">
-            <div class="navbar-nav">
-              <a class="nav-item nav-link" id="logout" href="/logout">Logout</a>
-                </div>
-          </div>
-    </nav>
- 
-    <div class="container">
-        <div class="row">
-           <div class="col-lg-12 text-center">
-               <div class="card-body">
-                    <h4 class="card-title">Wallet Generator</h4>
-                    <p class="card-text">Click on the button below to generate your blockchain wallet</p>
-                    <button type="submit" class="btn btn-primary">Add Note</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="container">
-      <div class="row">
-        <label class="col-sm-2">Public Key:</label>
-        <div class="col-sm-10">
-          <textarea id="public_key" rows="5" class="form-control" readonly></textarea>
-        </div>
-      </div>
-    </div>
-        <br>
-
-        <div class="row" id="warning" style="display:none">
-          <div class="col-sm-12">
-            <div class="alert alert-danger" role="alert">
-              IMPORTANT
-              <ul>
-                <li>Save you private and public keys. These keys cannot be recovered!</li>
-                <li>Don't share your private key with anyone!</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-    </div>
-
-
-    <script src="/static/vendor/jquery/jquery.min.js"></script>
     <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/vendor/DataTables/js/datatables.min.js"></script>
-    <script src="/static/vendor/DataTables/js/ellipsis.js"></script>
 
-    <script>
-        $(function() {
-            $('button').click(function() {
 
-                $.ajax({
-                    url: '/wallet/new',
-                    type: 'GET',
-                    success: function(response) {
-                        document.getElementById("public_key").innerHTML = response['public_key'];
-                        document.getElementById("private_key").innerHTML = response['private_key'];
-                        document.getElementById("warning").style.display = "block";
-                    },
-                    error: function(error) {
-                        console.log(error);
-                    }
-                });
-            });
-        });
 
-    </script>
+    <link rel="image" type="image" href="/static/images/logo.png">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <title>Bootstrap Responsive Navbar</title>
+</head>
+<body class="vh-100 overflow-hidden">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+          <div class="container">
+          <!-- Logo -->
+            <a href="{{ url_for('client_index') }}" class="navbar-brand">
+            <img src="/static/images/logo3.png" alt="HTML tutorial">
+            </a>
+            <!-- toggle Btn -->
+            <button class="navbar-toggler shadow-none border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <!-- side Bar -->
+            <div class="sidebar offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+            <!-- sidebar Header -->
+              <div class="offcanvas-header text-white border-bottom">
+                <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Blockchain</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              </div>
+              <!-- sidebar body -->
+              <div class="offcanvas-body d-flex flex-column flex-lg-row p-4 p-lg-0">
+                <ul class="navbar-nav justify-content-center align-items-center fs-5 flex-grow-1 pe-3">
+                  <li class="nav-item mx-2">
+                    <a class="nav-link" href="{{ url_for('client_index') }}">Home</a>
+                  </li>
+                  <li class="nav-item mx-2">
+                    <a class="nav-link" href="{{ url_for('server') }}">Mine</a>
+                  </li>
+                  <li class="nav-item mx-2">
+                    <a class="nav-link" href="{{ url_for('make_transaction') }}">Make Transaction</a>
+                  </li><li class="nav-item mx-2">
+                    <a class="nav-link active" aria-current="page" href="{{ url_for('view_transactions') }}">View Transaction</a>
+                  </li><li class="nav-item mx-2">
+                    <a class="nav-link" href="{{ url_for('account') }}">Account</a>
+                  </li>
+                </ul>
+                <!-- Join Us -->
+                <div class="d-flex flex-column flex-lg-row justify-content-center align-items-center gap-3">
+                  {% if current_user.is_authenticated %}
+                  <a href="{{ url_for('logout') }}" class="text-white text-decoration-none px-3 py-1 rounded-4" style="background-color: #f94ca4" >Logout</a>
+                  {% else %}
+                   <a href="{{ url_for('login') }}" class="text-white text-decoration-none px-3 py-1 rounded-4" style="background-color: #f94ca4" >Join Us</a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
 
-</body>
+
+    <main>
+     <section class="w-100 vh-100 d-flex flex-column justify-content-center align-items-center text-white fs-1">
+     <h1>TEST</h1>
+
+     </section>
+
+    </main>
+
+
+  </body>
 </html>
