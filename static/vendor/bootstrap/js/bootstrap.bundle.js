@@ -434,528 +434,168 @@
       }
     }
   }
-  function getTypeEvent(event) {
-    // allow to get the native events from namespaced events ('click.bs.button' --> 'click')
-    event = event.replace(stripNameRegex, '');
-    return customEvents[event] || event;
-  }
-  const EventHandler = {
-    on(element, event, handler, delegationFunction) {
-      addHandler(element, event, handler, delegationFunction, false);
-    },
-    one(element, event, handler, delegationFunction) {
-      addHandler(element, event, handler, delegationFunction, true);
-    },
-    off(element, originalTypeEvent, handler, delegationFunction) {
-      if (typeof originalTypeEvent !== 'string' || !element) {
-        return;
-      }
-      const [isDelegated, callable, typeEvent] = normalizeParameters(originalTypeEvent, handler, delegationFunction);
-      const inNamespace = typeEvent !== originalTypeEvent;
-      const events = getElementEvents(element);
-      const storeElementEvent = events[typeEvent] || {};
-      const isNamespace = originalTypeEvent.startsWith('.');
-      if (typeof callable !== 'undefined') {
-        // Simplest case: handler is passed, remove that listener ONLY.
-        if (!Object.keys(storeElementEvent).length) {
-          return;
-        }
-        removeHandler(element, events, typeEvent, callable, isDelegated ? handler : null);
-        return;
-      }
-      if (isNamespace) {
-        for (const elementEvent of Object.keys(events)) {
-          removeNamespacedHandlers(element, events, elementEvent, originalTypeEvent.slice(1));
-        }
-      }
-      for (const [keyHandlers, event] of Object.entries(storeElementEvent)) {
-        const handlerKey = keyHandlers.replace(stripUidRegex, '');
-        if (!inNamespace || originalTypeEvent.includes(handlerKey)) {
-          removeHandler(element, events, typeEvent, event.callable, event.delegationSelector);
-        }
-      }
-    },
-    trigger(element, event, args) {
-      if (typeof event !== 'string' || !element) {
-        return null;
-      }
-      const $ = getjQuery();
-      const typeEvent = getTypeEvent(event);
-      const inNamespace = event !== typeEvent;
-      let jQueryEvent = null;
-      let bubbles = true;
-      let nativeDispatch = true;
-      let defaultPrevented = false;
-      if (inNamespace && $) {
-        jQueryEvent = $.Event(event, args);
-        $(element).trigger(jQueryEvent);
-        bubbles = !jQueryEvent.isPropagationStopped();
-        nativeDispatch = !jQueryEvent.isImmediatePropagationStopped();
-        defaultPrevented = jQueryEvent.isDefaultPrevented();
-      }
-      const evt = hydrateObj(new Event(event, {
-        bubbles,
-        cancelable: true
-      }), args);
-      if (defaultPrevented) {
-        evt.preventDefault();
-      }
-      if (nativeDispatch) {
-        element.dispatchEvent(evt);
-      }
-      if (evt.defaultPrevented && jQueryEvent) {
-        jQueryEvent.preventDefault();
-      }
-      return evt;
-    }
-  };
-  function hydrateObj(obj, meta = {}) {
-    for (const [key, value] of Object.entries(meta)) {
-      try {
-        obj[key] = value;
-      } catch (_unused) {
-        Object.defineProperty(obj, key, {
-          configurable: true,
-          get() {
-            return value;
-          }
-        });
-      }
-    }
-    return obj;
-  }
+/**
+ * --------------------------------------------------------------------------
+ * Bootstrap (v4.0.0): button.js
+ * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+ * --------------------------------------------------------------------------
+ */
 
+var Button = function ($$$1) {
   /**
-   * --------------------------------------------------------------------------
-   * Bootstrap dom/manipulator.js
-   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
-   * --------------------------------------------------------------------------
-   */
-
-  function normalizeData(value) {
-    if (value === 'true') {
-      return true;
-    }
-    if (value === 'false') {
-      return false;
-    }
-    if (value === Number(value).toString()) {
-      return Number(value);
-    }
-    if (value === '' || value === 'null') {
-      return null;
-    }
-    if (typeof value !== 'string') {
-      return value;
-    }
-    try {
-      return JSON.parse(decodeURIComponent(value));
-    } catch (_unused) {
-      return value;
-    }
-  }
-  function normalizeDataKey(key) {
-    return key.replace(/[A-Z]/g, chr => `-${chr.toLowerCase()}`);
-  }
-  const Manipulator = {
-    setDataAttribute(element, key, value) {
-      element.setAttribute(`data-bs-${normalizeDataKey(key)}`, value);
-    },
-    removeDataAttribute(element, key) {
-      element.removeAttribute(`data-bs-${normalizeDataKey(key)}`);
-    },
-    getDataAttributes(element) {
-      if (!element) {
-        return {};
-      }
-      const attributes = {};
-      const bsKeys = Object.keys(element.dataset).filter(key => key.startsWith('bs') && !key.startsWith('bsConfig'));
-      for (const key of bsKeys) {
-        let pureKey = key.replace(/^bs/, '');
-        pureKey = pureKey.charAt(0).toLowerCase() + pureKey.slice(1, pureKey.length);
-        attributes[pureKey] = normalizeData(element.dataset[key]);
-      }
-      return attributes;
-    },
-    getDataAttribute(element, key) {
-      return normalizeData(element.getAttribute(`data-bs-${normalizeDataKey(key)}`));
-    }
-  };
-
-  /**
-   * --------------------------------------------------------------------------
-   * Bootstrap util/config.js
-   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
-   * --------------------------------------------------------------------------
-   */
-
-
-  /**
-   * Class definition
-   */
-
-  class Config {
-    // Getters
-    static get Default() {
-      return {};
-    }
-    static get DefaultType() {
-      return {};
-    }
-    static get NAME() {
-      throw new Error('You have to implement the static method "NAME", for each component!');
-    }
-    _getConfig(config) {
-      config = this._mergeConfigObj(config);
-      config = this._configAfterMerge(config);
-      this._typeCheckConfig(config);
-      return config;
-    }
-    _configAfterMerge(config) {
-      return config;
-    }
-    _mergeConfigObj(config, element) {
-      const jsonConfig = isElement$1(element) ? Manipulator.getDataAttribute(element, 'config') : {}; // try to parse
-
-      return {
-        ...this.constructor.Default,
-        ...(typeof jsonConfig === 'object' ? jsonConfig : {}),
-        ...(isElement$1(element) ? Manipulator.getDataAttributes(element) : {}),
-        ...(typeof config === 'object' ? config : {})
-      };
-    }
-    _typeCheckConfig(config, configTypes = this.constructor.DefaultType) {
-      for (const [property, expectedTypes] of Object.entries(configTypes)) {
-        const value = config[property];
-        const valueType = isElement$1(value) ? 'element' : toType(value);
-        if (!new RegExp(expectedTypes).test(valueType)) {
-          throw new TypeError(`${this.constructor.NAME.toUpperCase()}: Option "${property}" provided type "${valueType}" but expected type "${expectedTypes}".`);
-        }
-      }
-    }
-  }
-
-  /**
-   * --------------------------------------------------------------------------
-   * Bootstrap base-component.js
-   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
-   * --------------------------------------------------------------------------
-   */
-
-
-  /**
+   * ------------------------------------------------------------------------
    * Constants
+   * ------------------------------------------------------------------------
    */
+  var NAME = 'button';
+  var VERSION = '4.0.0';
+  var DATA_KEY = 'bs.button';
+  var EVENT_KEY = "." + DATA_KEY;
+  var DATA_API_KEY = '.data-api';
+  var JQUERY_NO_CONFLICT = $$$1.fn[NAME];
+  var ClassName = {
+    ACTIVE: 'active',
+    BUTTON: 'btn',
+    FOCUS: 'focus'
+  };
+  var Selector = {
+    DATA_TOGGLE_CARROT: '[data-toggle^="button"]',
+    DATA_TOGGLE: '[data-toggle="buttons"]',
+    INPUT: 'input',
+    ACTIVE: '.active',
+    BUTTON: '.btn'
+  };
+  var Event = {
+    CLICK_DATA_API: "click" + EVENT_KEY + DATA_API_KEY,
+    FOCUS_BLUR_DATA_API: "focus" + EVENT_KEY + DATA_API_KEY + " " + ("blur" + EVENT_KEY + DATA_API_KEY)
+    /**
+     * ------------------------------------------------------------------------
+     * Class Definition
+     * ------------------------------------------------------------------------
+     */
 
-  const VERSION = '5.3.3';
+  };
 
-  /**
-   * Class definition
-   */
-
-  class BaseComponent extends Config {
-    constructor(element, config) {
-      super();
-      element = getElement(element);
-      if (!element) {
-        return;
-      }
+  var Button =
+  /*#__PURE__*/
+  function () {
+    function Button(element) {
       this._element = element;
-      this._config = this._getConfig(config);
-      Data.set(this._element, this.constructor.DATA_KEY, this);
-    }
+    } // Getters
+
+
+    var _proto = Button.prototype;
 
     // Public
-    dispose() {
-      Data.remove(this._element, this.constructor.DATA_KEY);
-      EventHandler.off(this._element, this.constructor.EVENT_KEY);
-      for (const propertyName of Object.getOwnPropertyNames(this)) {
-        this[propertyName] = null;
-      }
-    }
-    _queueCallback(callback, element, isAnimated = true) {
-      executeAfterTransition(callback, element, isAnimated);
-    }
-    _getConfig(config) {
-      config = this._mergeConfigObj(config, this._element);
-      config = this._configAfterMerge(config);
-      this._typeCheckConfig(config);
-      return config;
-    }
+    _proto.toggle = function toggle() {
+      var triggerChangeEvent = true;
+      var addAriaPressed = true;
+      var rootElement = $$$1(this._element).closest(Selector.DATA_TOGGLE)[0];
 
-    // Static
-    static getInstance(element) {
-      return Data.get(getElement(element), this.DATA_KEY);
-    }
-    static getOrCreateInstance(element, config = {}) {
-      return this.getInstance(element) || new this(element, typeof config === 'object' ? config : null);
-    }
-    static get VERSION() {
-      return VERSION;
-    }
-    static get DATA_KEY() {
-      return `bs.${this.NAME}`;
-    }
-    static get EVENT_KEY() {
-      return `.${this.DATA_KEY}`;
-    }
-    static eventName(name) {
-      return `${name}${this.EVENT_KEY}`;
-    }
-  }
+      if (rootElement) {
+        var input = $$$1(this._element).find(Selector.INPUT)[0];
 
-  /**
-   * --------------------------------------------------------------------------
-   * Bootstrap dom/selector-engine.js
-   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
-   * --------------------------------------------------------------------------
-   */
+        if (input) {
+          if (input.type === 'radio') {
+            if (input.checked && $$$1(this._element).hasClass(ClassName.ACTIVE)) {
+              triggerChangeEvent = false;
+            } else {
+              var activeElement = $$$1(rootElement).find(Selector.ACTIVE)[0];
 
-  const getSelector = element => {
-    let selector = element.getAttribute('data-bs-target');
-    if (!selector || selector === '#') {
-      let hrefAttribute = element.getAttribute('href');
+              if (activeElement) {
+                $$$1(activeElement).removeClass(ClassName.ACTIVE);
+              }
+            }
+          }
 
-      // The only valid content that could double as a selector are IDs or classes,
-      // so everything starting with `#` or `.`. If a "real" URL is used as the selector,
-      // `document.querySelector` will rightfully complain it is invalid.
-      // See https://github.com/twbs/bootstrap/issues/32273
-      if (!hrefAttribute || !hrefAttribute.includes('#') && !hrefAttribute.startsWith('.')) {
-        return null;
-      }
+          if (triggerChangeEvent) {
+            if (input.hasAttribute('disabled') || rootElement.hasAttribute('disabled') || input.classList.contains('disabled') || rootElement.classList.contains('disabled')) {
+              return;
+            }
 
-      // Just in case some CMS puts out a full URL with the anchor appended
-      if (hrefAttribute.includes('#') && !hrefAttribute.startsWith('#')) {
-        hrefAttribute = `#${hrefAttribute.split('#')[1]}`;
-      }
-      selector = hrefAttribute && hrefAttribute !== '#' ? hrefAttribute.trim() : null;
-    }
-    return selector ? selector.split(',').map(sel => parseSelector(sel)).join(',') : null;
-  };
-  const SelectorEngine = {
-    find(selector, element = document.documentElement) {
-      return [].concat(...Element.prototype.querySelectorAll.call(element, selector));
-    },
-    findOne(selector, element = document.documentElement) {
-      return Element.prototype.querySelector.call(element, selector);
-    },
-    children(element, selector) {
-      return [].concat(...element.children).filter(child => child.matches(selector));
-    },
-    parents(element, selector) {
-      const parents = [];
-      let ancestor = element.parentNode.closest(selector);
-      while (ancestor) {
-        parents.push(ancestor);
-        ancestor = ancestor.parentNode.closest(selector);
-      }
-      return parents;
-    },
-    prev(element, selector) {
-      let previous = element.previousElementSibling;
-      while (previous) {
-        if (previous.matches(selector)) {
-          return [previous];
+            input.checked = !$$$1(this._element).hasClass(ClassName.ACTIVE);
+            $$$1(input).trigger('change');
+          }
+
+          input.focus();
+          addAriaPressed = false;
         }
-        previous = previous.previousElementSibling;
       }
-      return [];
-    },
-    // TODO: this is now unused; remove later along with prev()
-    next(element, selector) {
-      let next = element.nextElementSibling;
-      while (next) {
-        if (next.matches(selector)) {
-          return [next];
-        }
-        next = next.nextElementSibling;
+
+      if (addAriaPressed) {
+        this._element.setAttribute('aria-pressed', !$$$1(this._element).hasClass(ClassName.ACTIVE));
       }
-      return [];
-    },
-    focusableChildren(element) {
-      const focusables = ['a', 'button', 'input', 'textarea', 'select', 'details', '[tabindex]', '[contenteditable="true"]'].map(selector => `${selector}:not([tabindex^="-"])`).join(',');
-      return this.find(focusables, element).filter(el => !isDisabled(el) && isVisible(el));
-    },
-    getSelectorFromElement(element) {
-      const selector = getSelector(element);
-      if (selector) {
-        return SelectorEngine.findOne(selector) ? selector : null;
+
+      if (triggerChangeEvent) {
+        $$$1(this._element).toggleClass(ClassName.ACTIVE);
       }
-      return null;
-    },
-    getElementFromSelector(element) {
-      const selector = getSelector(element);
-      return selector ? SelectorEngine.findOne(selector) : null;
-    },
-    getMultipleElementsFromSelector(element) {
-      const selector = getSelector(element);
-      return selector ? SelectorEngine.find(selector) : [];
-    }
-  };
+    };
 
-  /**
-   * --------------------------------------------------------------------------
-   * Bootstrap util/component-functions.js
-   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
-   * --------------------------------------------------------------------------
-   */
-
-  const enableDismissTrigger = (component, method = 'hide') => {
-    const clickEvent = `click.dismiss${component.EVENT_KEY}`;
-    const name = component.NAME;
-    EventHandler.on(document, clickEvent, `[data-bs-dismiss="${name}"]`, function (event) {
-      if (['A', 'AREA'].includes(this.tagName)) {
-        event.preventDefault();
-      }
-      if (isDisabled(this)) {
-        return;
-      }
-      const target = SelectorEngine.getElementFromSelector(this) || this.closest(`.${name}`);
-      const instance = component.getOrCreateInstance(target);
-
-      // Method argument is left, for Alert and only, as it doesn't implement the 'hide' method
-      instance[method]();
-    });
-  };
-
-  /**
-   * --------------------------------------------------------------------------
-   * Bootstrap alert.js
-   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
-   * --------------------------------------------------------------------------
-   */
+    _proto.dispose = function dispose() {
+      $$$1.removeData(this._element, DATA_KEY);
+      this._element = null;
+    }; // Static
 
 
-  /**
-   * Constants
-   */
-
-  const NAME$f = 'alert';
-  const DATA_KEY$a = 'bs.alert';
-  const EVENT_KEY$b = `.${DATA_KEY$a}`;
-  const EVENT_CLOSE = `close${EVENT_KEY$b}`;
-  const EVENT_CLOSED = `closed${EVENT_KEY$b}`;
-  const CLASS_NAME_FADE$5 = 'fade';
-  const CLASS_NAME_SHOW$8 = 'show';
-
-  /**
-   * Class definition
-   */
-
-  class Alert extends BaseComponent {
-    // Getters
-    static get NAME() {
-      return NAME$f;
-    }
-
-    // Public
-    close() {
-      const closeEvent = EventHandler.trigger(this._element, EVENT_CLOSE);
-      if (closeEvent.defaultPrevented) {
-        return;
-      }
-      this._element.classList.remove(CLASS_NAME_SHOW$8);
-      const isAnimated = this._element.classList.contains(CLASS_NAME_FADE$5);
-      this._queueCallback(() => this._destroyElement(), this._element, isAnimated);
-    }
-
-    // Private
-    _destroyElement() {
-      this._element.remove();
-      EventHandler.trigger(this._element, EVENT_CLOSED);
-      this.dispose();
-    }
-
-    // Static
-    static jQueryInterface(config) {
+    Button._jQueryInterface = function _jQueryInterface(config) {
       return this.each(function () {
-        const data = Alert.getOrCreateInstance(this);
-        if (typeof config !== 'string') {
-          return;
+        var data = $$$1(this).data(DATA_KEY);
+
+        if (!data) {
+          data = new Button(this);
+          $$$1(this).data(DATA_KEY, data);
         }
-        if (data[config] === undefined || config.startsWith('_') || config === 'constructor') {
-          throw new TypeError(`No method named "${config}"`);
-        }
-        data[config](this);
-      });
-    }
-  }
 
-  /**
-   * Data API implementation
-   */
-
-  enableDismissTrigger(Alert, 'close');
-
-  /**
-   * jQuery
-   */
-
-  defineJQueryPlugin(Alert);
-
-  /**
-   * --------------------------------------------------------------------------
-   * Bootstrap button.js
-   * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
-   * --------------------------------------------------------------------------
-   */
-
-
-  /**
-   * Constants
-   */
-
-  const NAME$e = 'button';
-  const DATA_KEY$9 = 'bs.button';
-  const EVENT_KEY$a = `.${DATA_KEY$9}`;
-  const DATA_API_KEY$6 = '.data-api';
-  const CLASS_NAME_ACTIVE$3 = 'active';
-  const SELECTOR_DATA_TOGGLE$5 = '[data-bs-toggle="button"]';
-  const EVENT_CLICK_DATA_API$6 = `click${EVENT_KEY$a}${DATA_API_KEY$6}`;
-
-  /**
-   * Class definition
-   */
-
-  class Button extends BaseComponent {
-    // Getters
-    static get NAME() {
-      return NAME$e;
-    }
-
-    // Public
-    toggle() {
-      // Toggle class and sync the `aria-pressed` attribute with the return value of the `.toggle()` method
-      this._element.setAttribute('aria-pressed', this._element.classList.toggle(CLASS_NAME_ACTIVE$3));
-    }
-
-    // Static
-    static jQueryInterface(config) {
-      return this.each(function () {
-        const data = Button.getOrCreateInstance(this);
         if (config === 'toggle') {
           data[config]();
         }
       });
-    }
-  }
+    };
 
+    _createClass(Button, null, [{
+      key: "VERSION",
+      get: function get() {
+        return VERSION;
+      }
+    }]);
+    return Button;
+  }();
   /**
-   * Data API implementation
+   * ------------------------------------------------------------------------
+   * Data Api implementation
+   * ------------------------------------------------------------------------
    */
 
-  EventHandler.on(document, EVENT_CLICK_DATA_API$6, SELECTOR_DATA_TOGGLE$5, event => {
+
+  $$$1(document).on(Event.CLICK_DATA_API, Selector.DATA_TOGGLE_CARROT, function (event) {
     event.preventDefault();
-    const button = event.target.closest(SELECTOR_DATA_TOGGLE$5);
-    const data = Button.getOrCreateInstance(button);
-    data.toggle();
-  });
+    var button = event.target;
 
+    if (!$$$1(button).hasClass(ClassName.BUTTON)) {
+      button = $$$1(button).closest(Selector.BUTTON);
+    }
+
+    Button._jQueryInterface.call($$$1(button), 'toggle');
+  }).on(Event.FOCUS_BLUR_DATA_API, Selector.DATA_TOGGLE_CARROT, function (event) {
+    var button = $$$1(event.target).closest(Selector.BUTTON)[0];
+    $$$1(button).toggleClass(ClassName.FOCUS, /^focus(in)?$/.test(event.type));
+  });
   /**
+   * ------------------------------------------------------------------------
    * jQuery
+   * ------------------------------------------------------------------------
    */
 
-  defineJQueryPlugin(Button);
+  $$$1.fn[NAME] = Button._jQueryInterface;
+  $$$1.fn[NAME].Constructor = Button;
+
+  $$$1.fn[NAME].noConflict = function () {
+    $$$1.fn[NAME] = JQUERY_NO_CONFLICT;
+    return Button._jQueryInterface;
+  };
+
+  return Button;
+}($);
 
   /**
    * --------------------------------------------------------------------------

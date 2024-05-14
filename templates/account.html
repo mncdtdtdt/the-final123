@@ -1,97 +1,111 @@
 
 {% extends "layout.html" %}
 {% block content %}
+
     <div class="content-section">
         <div class="media">
-            <img class="rounded-circle account-img" src="{{ image_file }}">
+            <img class="rounded-circle account-img mb-1" src="{{ image_file }}" >
             <div class="media-body">
-               <h2 class="account-heading">{{ current_user.first_name }}</h2>
-               <p class="text-secondary">{{ current_user.email }}</p>
+                <h2 class="account-heading text-black mb-1">{{ current_user.first_name }} </h2>
+                <p class="text-secondary text-black mb-1">{{ current_user.email }}</p>
                
-            </div>
+            </div>    
         </div>
+        
             <form method="POST" action="" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
                 <fieldset class="form-group">
-                    <legend class="border-bottom mb-4">Account Info</legend>
+                    <legend class="border-bottom ">Account Info</legend>
                     <div class="form-group">
                         {{ form.username.label(class="form-control-label") }}
     
                         {% if form.username.errors %}
-                            {{ form.username(class="form-control form-control-lg is-invalid") }}
+                            {{ form.username(class="form-control form-control-sm is-invalid") }}
                             <div class="invalid-feedback">
                                 {% for error in form.username.errors %}
                                     <span>{{ error }}</span>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            {{ form.username(class="form-control form-control-lg") }}
+                            {{ form.username(class="form-control form-control-sm") }}
                         {% endif %}
                     </div>
-                    <div class="form-group">
+                    <div >
                         {{ form.email.label(class="form-control-label") }}
                         
                         {% if form.email.errors %}
-                            {{ form.email(class="form-control form-control-lg is-invalid") }}
+                            {{ form.email(class="form-control form-control-sm is-invalid") }}
                             <div class="invalid-feedback">
                                 {% for error in form.email.errors %}
                                     <span>{{ error }}</span>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            {{ form.email(class="form-control form-control-lg") }}
+                            {{ form.email(class="form-control form-control-sm") }}
                         {% endif %}
                     </div>
                     <div class="form-group">
-                        {{ form.old_password.label }} {{ form.old_password(size=20) }}
+                        {{ form.old_password.label(class="form-control-label") }}
+
                         {% if form.old_password.errors %}
-                            <ul class="errors">
+                            {{ form.old_password(class="form-control form-control-sm is-invalid") }}
+                            <div class="invalid-feedback">
                                 {% for error in form.old_password.errors %}
-                                    <li>{{error }}</li>
+                                    <span>{{ error }}</span>
                                 {% endfor %}
-                            </ul>
+                            </div>
+                        {% else %}
+                            {{ form.old_password(class="form-control form-control-sm") }}
                         {% endif %}
                     </div>
                     <div class="form-group">
-                        {{ form.new_password.label }} {{ form.new_password(size=20) }}
+                        {{ form.new_password.label(class="form-control-label") }}
+
                         {% if form.new_password.errors %}
-                            <ul class="errors">
+                            {{ form.new_password(class="form-control form-control-sm is-invalid") }}
+                            <div class="invalid-feedback">
                                 {% for error in form.new_password.errors %}
-                                    <li>{{ error }}</li>
+                                    <span>{{ error }}</span>
                                 {% endfor %}
-                            </ul>
+                            </div>
+                        {% else %}
+                            {{ form.new_password(class="form-control form-control-sm") }}
                         {% endif %}
                     </div>
                     <div class="form-group">
-                        {{ form.confirm_new_password.label }} {{ form.confirm_new_password(size=20) }}
+                        {{ form.confirm_new_password.label(class="form-control-label") }}
+
                         {% if form.confirm_new_password.errors %}
-                            <ul class="errors">
+                            {{ form.confirm_new_password(class="form-control form-control-sm is-invalid") }}
+                            <div class="invalid-feedback">
                                 {% for error in form.confirm_new_password.errors %}
-                                    <li>{{ error }}</li>
+                                    <span>{{ error }}</span>
                                 {% endfor %}
-                            </ul>
+                            </div>
+                        {% else %}
+                            {{ form.confirm_new_password(class="form-control form-control-sm") }}
                         {% endif %}
                     </div>
                     <div class="form-group">
                         {{ form.public_key.label(class="form-control-label") }}
                         
                         {% if form.public_key.errors %}
-                            {{ form.public_key(class="form-control form-control-lg is-invalid", readonly=True) }}
+                            {{ form.public_key(class="form-control form-control-sm is-invalid", readonly=True) }}
                             <div class="invalid-feedback">
                                 {% for error in form.public_key.errors %}
                                     <span>{{ error }}</span>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            {{ form.public_key(class="form-control form-control-lg", readonly=True) }}
+                            {{ form.public_key(class="form-control form-control-sm", readonly=True) }}
                         {% endif %}
                     </div>
                     <div class="form-group">
                         {{ form.private_key.label(class="form-control-label") }}
                         {% if form.private_key.errors %}
-                            {{ form.private_key(class="form-control form-control-lg is-invalid", readonly=True) }}
+                            {{ form.private_key(class="form-control form-control-sm is-invalid", readonly=True) }}
                         {% else %}
-                            {{ form.private_key(class="form-control form-control-lg", readonly=True) }}
+                            {{ form.private_key(class="form-control form-control-sm", readonly=True) }}
                         {% endif %}
                         <div class="invalid-feedback">
                             {% for error in form.private_key.errors %}
@@ -99,7 +113,7 @@
                             {% endfor %}
                         </div>
                         <div class="form-group">
-                            {{ form.picture.label() }}
+                            {{ form.picture.label(type="file") }}
                             {{ form.picture(class="form-control-file") }}
                             {% if form.picture.errors %}
                                 {% for error in form.picture.errors %}

@@ -1,84 +1,89 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/vendor/DataTables/css/datatables.min.css">
+    <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
+
+    <link rel="icon" type="image/x-icon" href="https://i.ibb.co/nRRH0dn/Screenshot-24-removebg-preview.png">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='astyle.css') }}">
+    
 
     {% if title %}
         <title>{{ title }}</title>
     {% else %}
         <title>Blockchain</title>
     {% endif %}
+
+
 </head>
-<body>
-    <header class="site-header">
-      <nav class="navbar navbar-expand-md navbar-dark bg-steel fixed-top">
-        <div class="container">
-          <a class="navbar-brand mr-4" href="/">Client Area</a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarToggle">
-            <div class="navbar-nav mr-auto">
-              <a class="nav-item nav-link" href="{{ url_for('server') }}">Blockchain Server</a>
-              <div class="collapse navbar-collapse" id="navbarToggle">
-                <div class="navbar-nav mr-auto">
-                  <a class="nav-item nav-link" href="{{ url_for('client_index') }}">Home</a>
-                  <a class="nav-item nav-link" href="{{ url_for('account') }}">About</a>
-                </div>
-                <!-- Navbar Right Side -->
-                <div class="navbar-nav">
+<body class="vh-100 overflow-visible">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+          <div class="container">
+          <!-- Logo -->
+            <a href="{{ url_for('client_index') }}" class="navbar-brand">
+            <img src="https://i.ibb.co/ygHh5K3/logo3.png"  alt="HTML tutorial">
+            </a>
+            <!-- toggle Btn -->
+            <button class="navbar-toggler shadow-none border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <!-- side Bar -->
+            <div class="sidebar offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+            <!-- sidebar Header -->
+              <div class="offcanvas-header text-white border-bottom">
+                <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Blockchain</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              </div>
+              <!-- sidebar body -->
+              <div class="offcanvas-body d-flex flex-column flex-lg-row p-4 p-lg-0">
+                <ul class="navbar-nav justify-content-center align-items-center fs-5 flex-grow-1 pe-3">
+                  <li class="nav-item mx-2">
+                    <a class="nav-link" href="{{ url_for('client_index') }}">Home</a>
+                  </li>
+                  <li class="nav-item mx-2">
+                    <a class="nav-link" href="{{ url_for('server') }}">Mine</a>
+                  </li>
+                  <li class="nav-item mx-2">
+                    <a class="nav-link" href="{{ url_for('make_transaction') }}">Make Transaction</a>
+                  </li><li class="nav-item mx-2">
+                    <a class="nav-link" href="{{ url_for('view_transactions') }}">View Transaction</a>
+                  </li><li class="nav-item mx-2">
+                    <a class="nav-link active" aria-current="page" href="{{ url_for('account') }}">Account</a>
+                  </li>
+                </ul>
+                <!-- Join Us -->
+                <div class="d-flex flex-column flex-lg-row justify-content-center align-items-center gap-3">
                   {% if current_user.is_authenticated %}
-                    <a class="nav-item nav-link" href="{{ url_for('account') }}">Account</a>
-                    <a class="nav-item nav-link" href="{{ url_for('logout') }}">Logout</a>
+                  <a href="{{ url_for('logout') }}" class="text-white text-decoration-none px-3 py-1 rounded-4" style="background-color: #f94ca4" >Logout</a>
                   {% else %}
-                    <a class="nav-item nav-link" href="{{ url_for('login') }}">Login</a>
-                    <a class="nav-item nav-link" href="{{ url_for('login') }}">Register</a>
+                   <a href="{{ url_for('login') }}" class="text-white text-decoration-none px-3 py-1 rounded-4" style="background-color: #f94ca4" >Join Us</a>
                   {% endif %}
                 </div>
               </div>
             </div>
-            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
     </header>
-    <main role="main" class="container">
-      <div class="row">
-        <div class="col-md-8">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
-                  {{ message }}
-                </div>
-              {% endfor %}
-            {% endif %}
-          {% endwith %}
-          {% block content %}{% endblock %}
-        </div>
-        <div class="col-md-4">
-          <div class="content-section">
-            <h3>Our Sidebar</h3>
-            <p class='text-muted'>You can put any information here you'd like.
-              <ul class="list-group">
-                <li class="list-group-item list-group-item-light">Latest Posts</li>
-                <li class="list-group-item list-group-item-light">Announcements</li>
-                <li class="list-group-item list-group-item-light">Calendars</li>
-                <li class="list-group-item list-group-item-light">etc</li>
-              </ul>
-            </p>
-          </div>
-        </div>
-      </div>
+    <main>
+        <div>
+           {% with messages = get_flashed_messages(with_categories=true) %} {% if
+           messages %} {% for category, message in messages %}
+           <div class="alert alert-danger alter-dismissable fade show" role="alert">
+             {{ message }}
+            {% endfor %} {% endif %} {% endwith %}
+         </div>
+        {% block content %}
+        {% endblock %}
     </main>
+
+  
 
 
     <!-- Optional JavaScript -->
@@ -86,5 +91,8 @@
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+  
 </body>
+
 </html>

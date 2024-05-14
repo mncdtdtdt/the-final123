@@ -321,7 +321,7 @@ class UpdateAccountForm(FlaskForm):
 
     def validate_confirm_new_password(self, confirm_new_password):
         if confirm_new_password.data and confirm_new_password.data != self.new_password.data:
-            raise ValidationError('Passwords do not match')
+            raise ValidationError()
 
 
 class RequestResetForm(FlaskForm):
@@ -495,7 +495,7 @@ def account():
             current_user.password = generate_password_hash(
                 form.new_password.data, method='pbkdf2')
         db.session.commit()
-        flash('your account has been updated!', 'succes')
+        flash('Your account has been updated!', 'succes')
         return redirect(url_for('account'))
     elif request.method == 'GET':
         form.username.data = current_user.first_name

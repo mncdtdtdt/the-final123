@@ -4,19 +4,16 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/vendor/DataTables/css/datatables.min.css">
     <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
-    <link rel="stylesheet" href="/static/css/custom.css">
-
-
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     
-
-
-
-    <link rel="image" type="image" href="/static/images/logo.png">
+    <link rel="icon" type="image/x-icon" href="https://i.ibb.co/nRRH0dn/Screenshot-24-removebg-preview.png">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-    <title>Bootstrap Responsive Navbar</title>
+    <title>Blockchain</title>
 </head>
 <body class="vh-100 overflow-hidden">
         <!-- Navbar -->
@@ -24,7 +21,7 @@
           <div class="container">
           <!-- Logo -->
             <a href="{{ url_for('client_index') }}" class="navbar-brand">
-            <img src="/static/images/logo3.png" alt="HTML tutorial">
+            <img src="https://i.ibb.co/ygHh5K3/logo3.png"  alt="HTML tutorial">
             </a>
             <!-- toggle Btn -->
             <button class="navbar-toggler shadow-none border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
@@ -76,13 +73,11 @@
          <div class="col-lg-12">
           <div class="card-body">
             <h4 class="card-title text-white">View Transactions</h4>
-            <p class="card-text text-white d-flex flex-column flex-lg-row justify-content-center align-items-center gap-3">Enter a blockchain node URL and click on "View Transactions" button to check all transactions</p>
           </div>
          </div>   
       </div>
     </div>
 
-        <br>
 
         <div class="row">
           <div class="col-lg-12 text-center">
@@ -91,13 +86,14 @@
         </div>
 
 
+  
+     <!-- Blockchain Transactions Table -->
+  <div class="container">
+      <table id="transactions_table" class="table table-bordered" cellspacing="0" width="100%">
 
-    <br>
-    <!-- Blockchain Transactions Table -->
-    <div class="container ">
-      <table id="transactions_table" class="table table-striped table-bordered" cellspacing="0" width="100%">
       </table>
-    </div>
+  </div>
+
 
 
   
@@ -105,64 +101,7 @@
     <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="/static/vendor/DataTables/js/datatables.min.js"></script>
     <script src="/static/vendor/DataTables/js/ellipsis.js"></script>
-<script>
-$(function() {
+  <script src="/static/viewtable.js"></script>
 
-  $('#view_transactions').click(function(){
-
-    $.ajax({
-      url:"/chain",
-      type: 'GET',
-      success: function(response){
-
-        console.log(response);
-        //Generate Transactions Table
-        var transactions = [];
-        count = 1;
-
-        for (i = 1; i < response.length; i++) {
-          for (j = 0; j < response["chain"][i]["transactions"].length; j++) {
-
-            //format date
-            var options = {  year: "numeric", month: "short",  day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit"  };
-            var date = new Date(response["chain"][i]["timestamp"] * 1000);
-            var formattedDateTime = date.toLocaleTimeString("en-us", options);
-
-            transaction = [count,
-                          response["chain"][i]["transactions"][j]["recipient_public_key"],
-                          response["chain"][i]["transactions"][j]["sender_public_key"],
-                          response["chain"][i]["transactions"][j]["amount"],
-                          formattedDateTime,
-                          response["chain"][i]["block_number"]];
-            transactions.push(transaction);
-
-            count += 1;
-          };
-        };
-
-        if ( $.fn.DataTable.isDataTable( '#transactions_table' ) ) {
-            table = $('#transactions_table').DataTable();
-        } else {
-            table = $('#transactions_table').dataTable( {
-                data: transactions,
-                columns: [{ title: "#" },
-                          { title: "Recipient Public Key"},
-                          { title: "Sender Public Key"},
-                          { title: "Amount"},
-                          { title: "Timestamp"},
-                          { title: "Block"}],
-                columnDefs: [ {targets: [1,2,3,4,5], render: $.fn.dataTable.render.ellipsis( 25 )}]
-            } );
-        }
-
-      },
-      error: function(error){
-        console.log(error);
-      }
-    });
-  });
-
-});
-</script>
 </body>
 </html>

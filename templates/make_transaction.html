@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
     
 
-    <link rel="image" type="image" href="/static/images/logo.png">
+    <link rel="icon" type="image/x-icon" href="https://i.ibb.co/nRRH0dn/Screenshot-24-removebg-preview.png">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-    <title>Bootstrap Responsive Navbar</title>
+    <title>Blockchain</title>
 </head>
 <body class="vh-100 overflow-hidden">
         <!-- Navbar -->
@@ -20,7 +20,7 @@
           <div class="container">
           <!-- Logo -->
             <a href="{{ url_for('client_index') }}" class="navbar-brand">
-            <img src="/static/images/logo3.png" alt="HTML tutorial">
+            <img src="https://i.ibb.co/ygHh5K3/logo3.png"  alt="HTML tutorial">
             </a>
             <!-- toggle Btn -->
             <button class="navbar-toggler shadow-none border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
@@ -131,7 +131,7 @@
 
          <div class="modal-header">
            <div class="modal-title col-md-10">Confirm transaction details, enter a blockchain node url and click on "Confirm Transaction" to finalize your transaction.</div>
-           <button type="button" class="close col-md-2" data-dismiss="modal" aria-hidden="true">&times;</button>
+           <button type="button" id="close-btn2" class="close col-md-2" data-dismiss="modal" aria-hidden="true">&times;</button>
          </div>
 
          <div class="modal-body">
@@ -172,7 +172,7 @@
          </div>
 
          <div class="modal-footer">
-           <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+           <button type="button" id="cancel-btn" class="btn btn-danger" data-dismiss="modal">Cancel</button>
            <button type="button" id="button_confirm_transaction" class="btn btn-success">Confirm Transaction</button>
          </div>
 
@@ -188,7 +188,7 @@
        <div class="modal-content">
 
          <div class="modal-header">
-           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+           <button type="button" id="close-btn" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
          </div>
 
          <div class="modal-body">
@@ -257,7 +257,18 @@
 
                });
            });
-
+           $('#cancel-btn').click(function() {
+               $('#basic_modal').modal('hide');
+           });
+          $('#confirm_transaction').click(function(){
+           $('#success_transaction_modal').modal('hide');
+          }); 
+         $('#close-btn').click(function(){
+          $('#success_transaction_modal').modal('hide');
+         });
+         $('#close-btn2').click(function(){
+          $('#basic_modal').modal('hide');
+         });
        });
 
    </script>
